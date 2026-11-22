@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AEGIS CLOUD</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #0f172a; color: #f8fafc; max-width: 780px; margin: 40px auto; padding: 20px; }
+        h1 { color: #38bdf8; display: flex; justify-content: space-between; align-items: center; }
+        .card { background: #1e293b; padding: 20px; border-radius: 10px; margin-bottom: 20px; }
+        input[type="password"], input[type="text"], input[type="email"] { padding: 9px 12px; border-radius: 6px; border: 1px solid #334155; background: #0f172a; color: white; margin-bottom: 10px; }
+        .full-input { width: 100%; box-sizing: border-box; }
+        button { background: #38bdf8; color: #0f172a; border: none; padding: 8px 14px; border-radius: 6px; font-weight: bold; cursor: pointer; }
+        button:hover { background: #7dd3fc; }
+        .tab-bar { display: flex; gap: 10px; margin-bottom: 16px; border-bottom: 1px solid #334155; padding-bottom: 12px; }
+        .tab-btn { background: #334155; color: #f8fafc; }
+        .tab-btn.active { background: #38bdf8; color: #0f172a; }
+        .link-btn { background: transparent; color: #94a3b8; font-weight: normal; text-decoration: underline; padding: 8px; }
+        .filter-bar { display: flex; gap: 8px; margin-bottom: 14px; }
+        .filter-btn { background: #334155; color: #f8fafc; padding: 6px 12px; font-size: 13px; }
+        .filter-btn.active { background: #38bdf8; color: #0f172a; }
+        .view-btn { background: #10b981; color: white; margin-right: 4px; }
+        .share-btn { background: #8b5cf6; color: white; margin-right: 4px; }
+        .del-btn { background: #ef4444; color: white; margin-left: 4px; }
+        .top-btn { background: #475569; color: white; margin-left: 8px; font-size: 13px; }
+        .file-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #334155; gap: 10px; }
+        .file-meta { font-size: 12px; color: #94a3b8; margin-top: 4px; }
+        .bar-bg { background: #0f172a; border-radius: 8px; height: 10px; overflow: hidden; margin-top: 8px; }
+        .bar-fill { background: #38bdf8; height: 100%; width: 0%; transition: width 0.3s ease; }
+        .share-box { background: #0f172a; padding: 10px; border-radius: 6px; margin-top: 10px; font-size: 13px; color: #38bdf8; word-break: break-all; }
+    </style>
+</head>
+<body>
+    <h1>
+        <span>AEGIS CLOUD</span>
+        <span id="topControls" style="display:none;">
+            <span id="userBadge" style="font-size:14px; color:#94a3b8; margin-right:8px;"></span>
+            <button class="top-btn" onclick="toggleSettings()">Account Settings</button>
+            <button class="top-btn" onclick="logoutUser()">Logout</button>
+        </span>
+    </h1>
+
+    <div id="authScreen" class="card">
+        <div class="tab-bar">
+            <button id="loginTabBtn" class="tab-btn active" onclick="switchAuthTab('login')">Sign In</button>
+            <button id="signupTabBtn" class="tab-btn" onclick="switchAuthTab('signup')">Create Free Account</button>
+        </div>
+
+        <div id="loginForm">
+            <input type="text" id="loginUser" class="full-input" placeholder="Username">
+            <input type="password" id="loginPass" class="full-input" placeholder="Password">
+            <button onclick="loginUser()">Sign In</button>
+            <button class="link-btn" onclick="showForgotScreen()">Forgot Password?</button>
+            <p id="loginError" style="color:#ef4444; font-size:13px;"></p>
+        </div>
+
+        <div id="signupForm" style="display:none;">
+            <input type="text" id="regUser" class="full-input" placeholder="Choose Username (3-20 chars, letters/numbers)">
+            <input type="password" id="regPass" class="full-input" placeholder="Create Password (min 4 chars)">
+            <input type="email" id="regEmail" class="full-input" placeholder="Recovery Email (optional)">
+            <input type="text" id="regMobile" class="full-input" placeholder="Recovery Mobile Number (optional)">
+            <button onclick="registerUser()">Create My Cloud Vault</button>
+            <p id="regMsg" style="font-size:13px;"></p>
+        </div>
+    </div>
+
+    <div id="forgotScreen" class="card" style="display:none;">
+        <h3>Reset Account Password</h3>
+        <input type="text" id="resetUserInput" class="full-input" placeholder="Your Username">
+        <input type="text" id="recoveryContactInput" class="full-input" placeholder="Registered Email or Mobile Number">
+        <button onclick="sendOtp()">Send OTP</button>
+        <button class="link-btn" onclick="backToAuth()">Back to Sign In</button>
+        <p id="otpSendMsg" style="font-size:13px;"></p>
+
+        <div id="otpVerifySection" style="display:none; margin-top:14px; border-top:1px solid #334155; padding-top:14px;">
+            <input type="text" id="otpCodeInput" placeholder="6-Digit OTP" style="margin-right:8px;">
+            <input type="password" id="resetNewPassInput" placeholder="New Password" style="margin-right:8px;">
+            <button onclick="verifyOtpAndReset()">Reset Password</button>
+            <p id="otpResetMsg" style="font-size:13px;"></p>
+        </div>
+    </div>
+
+    <div id="vaultApp" style="display:none;">
+        <div id="settingsCard" class="card" style="display:none;">
+            <h3>Account & Recovery Settings</h3>
+            <input type="email" id="savedEmailInput" class="full-input" placeholder="Recovery Email">
+            <input type="text" id="savedMobileInput" class="full-input" placeholder="Recovery Mobile Number">
+            <button onclick="saveRecovery()">Save Recovery Info</button>
+            <p id="recoverySaveMsg" style="font-size:13px;"></p>
+
+            <hr style="border-color:#334155; margin:16px 0;">
+            <h4>Change Password</h4>
+            <input type="password" id="newPassInput" placeholder="New Password (min 4 chars)" style="margin-right:8px;">
+            <button onclick="updatePassword()">Update Password</button>
+            <p id="passChangeMsg" style="font-size:13px;"></p>
+        </div>
+
+        <div class="card">
+            <div style="display:flex; justify-content:space-between; font-size:14px;">
+                <span><strong>My Private Cloud Storage</strong></span>
+                <span id="storageText">0 B / 500.0 MB</span>
+            </div>
+            <div class="bar-bg"><div id="storageBar" class="bar-fill"></div></div>
+        </div>
+
+        <div class="card">
+            <h3>Upload a File</h3>
+            <input type="file" id="fileInput">
+            <button onclick="uploadFile()">Upload</button>
+            <p id="status"></p>
+        </div>
+
+        <div class="card">
+            <h3>My Cloud Files (<span id="count">0</span>)</h3>
+            <div id="shareBanner" class="share-box" style="display:none;"></div>
+            <input type="text" id="searchInput" class="full-input" placeholder="Search my files..." oninput="renderFiles()" style="margin-top:10px;">
+            <div class="filter-bar">
+                <button class="filter-btn active" onclick="setFilter('all', this)">All</button>
+                <button class="filter-btn" onclick="setFilter('pdf', this)">PDFs</button>
+                <button class="filter-btn" onclick="setFilter('image', this)">Images</button>
+                <button class="filter-btn" onclick="setFilter('other', this)">Others</button>
+            </div>
+            <div id="fileList">Loading...</div>
+        </div>
+    </div>
+
+    <script>
+        const API = window.location.origin.startsWith("http") ? window.location.origin : "http://127.0.0.1:8000";
+        let sessionToken = "";
+        let currentUsername = "";
+        let allFiles = [];
+        let currentFilter = "all";
+
+        function switchAuthTab(tab) {
+            document.getElementById("loginForm").style.display = tab === "login" ? "block" : "none";
+            document.getElementById("signupForm").style.display = tab === "signup" ? "block" : "none";
+            document.getElementById("loginTabBtn").classList.toggle("active", tab === "login");
+            document.getElementById("signupTabBtn").classList.toggle("active", tab === "signup");
+            document.getElementById("loginError").innerText = "";
+            document.getElementById("regMsg").innerText = "";
+        }
+
+        async function registerUser() {
+            const username = document.getElementById("regUser").value.trim();
+            const password = document.getElementById("regPass").value.trim();
+            const email = document.getElementById("regEmail").value.trim();
+            const mobile = document.getElementById("regMobile").value.trim();
+            const msg = document.getElementById("regMsg");
+
+            const res = await fetch(`${API}/register`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ username, password, email, mobile })
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                msg.style.color = "#ef4444";
+                msg.innerText = data.detail || "Registration failed.";
+                return;
+            }
+            msg.style.color = "#10b981";
+            msg.innerText = "Account created! Switching to Sign In...";
+            setTimeout(() => {
+                document.getElementById("loginUser").value = username;
+                switchAuthTab("login");
+            }, 1000);
+        }
+
+        async function loginUser() {
+            const username = document.getElementById("loginUser").value.trim();
+            const password = document.getElementById("loginPass").value.trim();
+            const res = await fetch(`${API}/login`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ username, password })
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                document.getElementById("loginError").innerText = data.detail || "Login failed.";
+                return;
+            }
+            sessionToken = data.token;
+            currentUsername = data.username;
+            document.getElementById("userBadge").innerText = `@${currentUsername}`;
+            document.getElementById("savedEmailInput").value = data.email || "";
+            document.getElementById("savedMobileInput").value = data.mobile || "";
+            document.getElementById("loginError").innerText = "";
+            document.getElementById("authScreen").style.display = "none";
+            document.getElementById("vaultApp").style.display = "block";
+            document.getElementById("topControls").style.display = "inline-block";
+            loadFiles();
+        }
+
+        async function logoutUser() {
+            if (sessionToken) {
+                await fetch(`${API}/logout`, { method: "POST", headers: { "x-token": sessionToken } });
+            }
+            sessionToken = "";
+            currentUsername = "";
+            allFiles = [];
+            document.getElementById("loginPass").value = "";
+            document.getElementById("settingsCard").style.display = "none";
+            document.getElementById("shareBanner").style.display = "none";
+            document.getElementById("vaultApp").style.display = "none";
+            document.getElementById("topControls").style.display = "none";
+            document.getElementById("authScreen").style.display = "block";
+        }
+
+        function showForgotScreen() {
+            document.getElementById("authScreen").style.display = "none";
+            document.getElementById("forgotScreen").style.display = "block";
+            document.getElementById("otpSendMsg").innerText = "";
+            document.getElementById("otpResetMsg").innerText = "";
+            document.getElementById("otpVerifySection").style.display = "none";
+        }
+
+        function backToAuth() {
+            document.getElementById("forgotScreen").style.display = "none";
+            document.getElementById("authScreen").style.display = "block";
+        }
+
+        async function sendOtp() {
+            const username = document.getElementById("resetUserInput").value.trim();
+            const contact = document.getElementById("recoveryContactInput").value.trim();
+            const msg = document.getElementById("otpSendMsg");
+            const res = await fetch(`${API}/request-otp`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ username, contact })
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                msg.style.color = "#ef4444";
+                msg.innerText = data.detail || "Could not send OTP.";
+                return;
+            }
+            msg.style.color = "#10b981";
+            msg.innerText = data.message;
+            document.getElementById("otpVerifySection").style.display = "block";
+        }
+
+        async function verifyOtpAndReset() {
+            const username = document.getElementById("resetUserInput").value.trim();
+            const otp = document.getElementById("otpCodeInput").value.trim();
+            const new_password = document.getElementById("resetNewPassInput").value.trim();
+            const msg = document.getElementById("otpResetMsg");
+            const res = await fetch(`${API}/reset-password-otp`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ username, otp, new_password })
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                msg.style.color = "#ef4444";
+                msg.innerText = data.detail || "Reset failed.";
+                return;
+            }
+            msg.style.color = "#10b981";
+            msg.innerText = "Password reset! Returning to Sign In...";
+            setTimeout(() => backToAuth(), 1200);
+        }
+
+        function toggleSettings() {
+            const box = document.getElementById("settingsCard");
+            document.getElementById("passChangeMsg").innerText = "";
+            document.getElementById("recoverySaveMsg").innerText = "";
+            box.style.display = box.style.display === "none" ? "block" : "none";
+        }
+
+        async function saveRecovery() {
+            const email = document.getElementById("savedEmailInput").value.trim();
+            const mobile = document.getElementById("savedMobileInput").value.trim();
+            const res = await fetch(`${API}/save-recovery`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "x-token": sessionToken },
+                body: JSON.stringify({ email, mobile })
+            });
+            if (res.ok) {
+                const msg = document.getElementById("recoverySaveMsg");
+                msg.style.color = "#10b981";
+                msg.innerText = "Recovery info saved!";
+            }
+        }
+
+        async function updatePassword() {
+            const new_password = document.getElementById("newPassInput").value.trim();
+            const msg = document.getElementById("passChangeMsg");
+            if (new_password.length < 4) {
+                msg.style.color = "#ef4444";
+                msg.innerText = "Password must be at least 4 characters.";
+                return;
+            }
+            const res = await fetch(`${API}/change-password`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "x-token": sessionToken },
+                body: JSON.stringify({ new_password })
+            });
+            if (res.ok) {
+                document.getElementById("newPassInput").value = "";
+                msg.style.color = "#10b981";
+                msg.innerText = "Password updated!";
+            }
+        }
+
+        async function shareFile(name) {
+            const res = await fetch(`${API}/share/${encodeURIComponent(name)}`, {
+                method: "POST",
+                headers: { "x-token": sessionToken }
+            });
+            const data = await res.json();
+            if (res.ok) {
+                const banner = document.getElementById("shareBanner");
+                banner.style.display = "block";
+                banner.innerHTML = `<strong>1-Hour Public Share Link for ${name}:</strong><br>${data.share_url}`;
+                navigator.clipboard?.writeText(data.share_url);
+            }
+        }
+
+        function setFilter(type, btn) {
+            currentFilter = type;
+            document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+            renderFiles();
+        }
+
+        async function loadFiles() {
+            const res = await fetch(`${API}/files`, { headers: { "x-token": sessionToken } });
+            const data = await res.json();
+            allFiles = data.files;
+            document.getElementById("count").innerText = data.total_files;
+            document.getElementById("storageText").innerText = `${data.used_storage} used of ${data.limit_storage}`;
+            document.getElementById("storageBar").style.width = `${Math.min(data.percent_used, 100)}%`;
+            renderFiles();
+        }
+
+        function renderFiles() {
+            const query = document.getElementById("searchInput").value.toLowerCase();
+            const filtered = allFiles.filter(file => {
+                const name = file.name.toLowerCase();
+                const matchesSearch = name.includes(query);
+                const isPdf = name.endsWith(".pdf");
+                const isImg = [".png", ".jpg", ".jpeg", ".gif", ".webp"].some(ext => name.endsWith(ext));
+                if (currentFilter === "pdf") return matchesSearch && isPdf;
+                if (currentFilter === "image") return matchesSearch && isImg;
+                if (currentFilter === "other") return matchesSearch && !isPdf && !isImg;
+                return matchesSearch;
+            });
+
+            const list = document.getElementById("fileList");
+            if (filtered.length === 0) {
+                list.innerHTML = "<p>No files found.</p>";
+                return;
+            }
+            list.innerHTML = filtered.map(file => `
+                <div class="file-row">
+                    <div>
+                        <div><strong>${file.name}</strong></div>
+                        <div class="file-meta">${file.size} • Uploaded ${file.uploaded_at}</div>
+                    </div>
+                    <div style="white-space:nowrap;">
+                        <a href="${API}/preview/${encodeURIComponent(file.name)}?token=${encodeURIComponent(sessionToken)}" target="_blank"><button class="view-btn">View</button></a>
+                        <button class="share-btn" onclick="shareFile('${file.name}')">Share</button>
+                        <a href="${API}/download/${encodeURIComponent(file.name)}?token=${encodeURIComponent(sessionToken)}" download><button>Download</button></a>
+                        <button class="del-btn" onclick="deleteFile('${file.name}')">Delete</button>
+                    </div>
+                </div>
+            `).join("");
+        }
+
+        async function uploadFile() {
+            const input = document.getElementById("fileInput");
+            if (!input.files.length) return alert("Choose a file first!");
+            const formData = new FormData();
+            formData.append("file", input.files[0]);
+            document.getElementById("status").innerText = "Uploading...";
+            await fetch(`${API}/upload`, {
+                method: "POST",
+                headers: { "x-token": sessionToken },
+                body: formData
+            });
+            document.getElementById("status").innerText = "Uploaded!";
+            input.value = "";
+            loadFiles();
+        }
+
+        async function deleteFile(name) {
+            await fetch(`${API}/files/${encodeURIComponent(name)}`, {
+                method: "DELETE",
+                headers: { "x-token": sessionToken }
+            });
+            loadFiles();
+        }
+    </script>
+</body>
+</html>
