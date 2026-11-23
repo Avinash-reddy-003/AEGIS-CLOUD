@@ -23,9 +23,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 STORAGE_ROOT = os.path.join(BASE_DIR, "cloud_storage")
-FRONTEND_FILE = os.path.join(BASE_DIR, "frontend", "index.html")
+FRONTEND_FILE = os.path.join(BASE_DIR, "index.html")
 USERS_FILE = os.path.join(BASE_DIR, "users_db.json")
 os.makedirs(STORAGE_ROOT, exist_ok=True)
 
