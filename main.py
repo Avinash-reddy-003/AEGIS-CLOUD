@@ -64,18 +64,28 @@ def get_current_user(token: str) -> str:
     return username
 
 def send_real_email_otp(recipient: str, username: str, code: str) -> bool:
-    if not SMTP_EMAIL or not SMTP_APP_PASSWORD:
+    brevo_key = os.getenv("BREVO_API_KEY", "").strip()
+    if not brevo_key:
         return False
-    msg = EmailMessage()
-    msg["Subject"] = "AEGIS CLOUD - Account Password Reset OTP"
-    msg["From"] = SMTP_EMAIL
-    msg["To"] = recipient
-    msg.set_content(f"Hello {username},\n\nYour AEGIS CLOUD 6-digit password reset OTP is: {code}\n\nThis code expires in 5 minutes.")
-    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-        server.login(SMTP_EMAIL, SMTP_APP_PASSWORD)
-        server.send_message(msg)
-    return True
-
+    import urllib.request
+    payload = json.dumps({
+        "sender": {"name": "AEGIS CLOUD", "email": "avinashreddy8106583398@gmail.com"},
+        "to": [{"email": recipient, "name": username}],
+        "subject": "AEGIS CLOUD - Account Password Reset OTP",
+        "textContent": f"Hello {username},\n\nYour AEGIS CLOUD 6-digit password reset OTP is: {code}\n\nThis code expires in 5 minutes."
+    }).encode("utf-8")
+    req = urllib.request.Request(
+        "https://api.brevo.com/v3/smtp/email",
+        data=payload,
+        headers={
+            "accept": "application/json",
+            "api-key": brevo_key,
+            "content-type": "application/json"
+        },
+        method="POST"
+    )
+    with urllib.request.urlopen(req, timeout=15) as resp:
+        return 200 <= resp.status < 300
 def format_size(size_bytes: int) -> str:
     if size_bytes < 1024:
         return f"{size_bytes} B"
