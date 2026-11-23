@@ -149,6 +149,8 @@ def register(data: RegisterRequest):
     get_user_dir(username)
     return {"status": "registered", "username": username}
 
+LOGIN_HISTORY = []  # stores {"username": str, "time": str}
+
 @app.post("/login")
 def login(data: LoginRequest):
     username = data.username.strip().lower()
@@ -156,6 +158,15 @@ def login(data: LoginRequest):
     user = users.get(username)
     if not user or user["password_hash"] != hash_pw(data.password.strip()):
         raise HTTPException(status_code=401, detail="Invalid username or password.")
+
+    from datetime import timezone, timedelta
+    ist_now = datetime.now(timezone(timedelta(hours=5, minutes=30))).strftime("%d %b %Y, %I:%M %p IST")
+    user["login_count"] = user.get("login_count", 0) + 1
+    user["last_login"] = ist_now
+    users[username] = user
+    save_users(users)
+    LOGIN_HISTORY.insert(0, {"username": username, "time": ist_now})
+    del LOGIN_HISTORY[100:]
 
     token = uuid.uuid4().hex
     ACTIVE_SESSIONS[token] = username
