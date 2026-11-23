@@ -179,21 +179,50 @@ def login(data: LoginRequest):
     }
 
 @app.post("/logout")
-def logout(x_token: str = Header(...)):
-    ACTIVE_SESSIONS.pop(x_token, None)
-    return {"status": "logged_out"}
-
-@app.post("/save-recovery")
-def save_recovery(data: RecoveryUpdateRequest, x_token: str = Header(...)):
-    username = get_current_user(x_token)
+@app.get("/admin", response_class=HTMLResponse)
+def admin_dashboard(key: str = Query("")):
+    admin_secret = os.getenv("ADMIN_KEY", "avinash123")
+    if key != admin_secret:
+        return """
+        <html><body style="background:#0f172a;color:#f8fafc;font-family:Arial;display:flex;justify-content:center;align-items:center;height:100vh;">
+        <form method="get" action="/admin" style="background:#1e293b;padding:28px;border-radius:10px;width:320px;">
+            <h2 style="color:#38bdf8;margin-top:0;">AEGIS CLOUD Admin</h2>
+            <input type="password" name="key" placeholder="Enter Admin Password" required style="width:100%;padding:10px;margin-bottom:12px;border-radius:6px;border:1px solid #334155;box-sizing:border-box;">
+            <button type="submit" style="width:100%;padding:10px;background:#38bdf8;color:#0f172a;font-weight:bold;border:none;border-radius:6px;cursor:pointer;">View Users & History</button>
+        </form></body></html>
+        """
     users = load_users()
-    users[username]["email"] = data.email.strip()
-    users[username]["mobile"] = data.mobile.strip()
-    save_users(users)
-    return {"status": "recovery_saved"}
-
-@app.post("/change-password")
-def change_password(data: PasswordChangeRequest, x_token: str = Header(...)):
+    user_rows = "".join(
+        f"<tr><td>{u}</td><td>{d.get('email') or '-'}</td><td>{d.get('mobile') or '-'}</td><td>{d.get('created_at','-')}</td><td>{d.get('login_count',0)}</td><td>{d.get('last_login','Never')}</td></tr>"
+        for u, d in users.items()
+    ) or "<tr><td colspan='6'>No registered users yet</td></tr>"
+    log_rows = "".join(
+        f"<tr><td>{item['username']}</td><td>{item['time']}</td></tr>"
+        for item in LOGIN_HISTORY
+    ) or "<tr><td colspan='2'>No logins recorded in this session yet</td></tr>"
+    return f"""
+    <html><head><title>AEGIS CLOUD Admin</title>
+    <style>
+        body {{ font-family: Arial; background: #0f172a; color: #f8fafc; max-width: 900px; margin: 30px auto; padding: 0 16px; }}
+        h1, h2 {{ color: #38bdf8; }}
+        .stats {{ display: flex; gap: 16px; margin-bottom: 24px; }}
+        .box {{ background: #1e293b; padding: 16px 22px; border-radius: 10px; flex: 1; }}
+        table {{ width: 100%; border-collapse: collapse; background: #1e293b; border-radius: 10px; overflow: hidden; margin-bottom: 28px; }}
+        th, td {{ padding: 10px 14px; border-bottom: 1px solid #334155; text-align: left; font-size: 14px; }}
+        th {{ background: #0284c7; color: #fff; }}
+    </style></head><body>
+    <h1>AEGIS CLOUD — Admin Monitor</h1>
+    <div class="stats">
+        <div class="box"><strong>Total Registered Users:</strong><h2>{len(users)}</h2></div>
+        <div class="box"><strong>Active Online Sessions:</strong><h2>{len(ACTIVE_SESSIONS)}</h2></div>
+        <div class="box"><strong>Recent Logins Recorded:</strong><h2>{len(LOGIN_HISTORY)}</h2></div>
+    </div>
+    <h2>Registered Users</h2>
+    <table><tr><th>Username</th><th>Email</th><th>Mobile</th><th>Joined</th><th>Total Logins</th><th>Last Login</th></tr>{user_rows}</table>
+    <h2>Recent Login History</h2>
+    <table><tr><th>Username</th><th>Login Time (IST)</th></tr>{log_rows}</table>
+    </body></html>
+    """
     username = get_current_user(x_token)
     if len(data.new_password.strip()) < 4:
         raise HTTPException(status_code=400, detail="Password must be at least 4 characters.")
